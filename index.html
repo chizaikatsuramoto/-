@@ -122,7 +122,7 @@ th{background:#f3f3f3}
 </div>
 
 <div id="nextArea" class="hidden">
-<button id="nextBtn" class="orange">残念！ 次のプレイヤーへ ▶</button>
+<button id="nextBtn" class="orange">次のプレイヤーへ ▶</button>
 </div>
 </section>
 
@@ -133,7 +133,7 @@ th{background:#f3f3f3}
 
 <section id="endArea" class="end hidden">
 <h2>🏆 ゲーム終了</h2>
-<p>新品種を生み出した数＋自分の品種が自分の品種が親になった数で勝敗を決めます。</p>
+<p>作った品種の数＋自分の品種が親になった数で勝敗を決めます。</p>
 <table>
 <thead><tr><th>プレイヤー</th><th>作った品種</th><th>自分の品種が親になった数</th><th>合計</th></tr></thead>
 <tbody id="scores"></tbody>
@@ -198,7 +198,7 @@ const MAX_TURNS = 16;
 const PLAYERS = [1,2,3,4].map(n => ({
   name:"プレイヤー"+n,
   varieties:[...FIRST_GENERATION],
-  created:[],
+  created:[], // 最初の6品種は「作った品種」には数えない
   points:0,
   usedByOthers:0
 }));
@@ -495,7 +495,7 @@ function failure(){
 
   // 「次のプレイヤーへ」だけ表示
   $("nextArea").classList.remove("hidden");
-  $("nextBtn").textContent = "残念！ 次のプレイヤーへ ▶";
+  $("nextBtn").textContent = "次のプレイヤーへ ▶";
 
   $("message").innerHTML =
     '<span class="bad">残念！</span>';
@@ -581,7 +581,7 @@ function renderTree(){
       c.innerHTML = `
         <div class="arrow">↓</div>
         <div class="childName" data-variety="${name}">${name}</div>
-        <div class="small">P${info.creator+1}が創造</div>`;
+        <div class="small">P${info.creator+1}が作った品種</div>`;
 
       r.appendChild(c);
 
@@ -598,7 +598,7 @@ function renderTree(){
         gc.innerHTML = `
           <div class="arrow">↓</div>
           <div class="childName" data-variety="${childName}">${childName}</div>
-          <div class="small">P${childInfo.creator+1}が創造</div>`;
+          <div class="small">P${childInfo.creator+1}が作った品種</div>`;
         r.appendChild(gc);
       });
     });
