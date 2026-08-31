@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>🌾 新品種をつくろう！</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:"Meiryo","Yu Gothic",sans-serif;background:#f4f0e6;color:#333}
+header{background:#6b9b4a;color:#fff;text-align:center;padding:12px}
+header h1{margin:0;font-size:26px}
+#app{max-width:1250px;margin:auto;padding:14px}
+.players{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.player{background:#fff;border:3px solid #ddd;border-radius:10px;padding:8px;text-align:center}
+.player.active{border-color:#e67e22;background:#fffaf2}
+.player h3{margin:0 0 3px}.points{font-size:20px;font-weight:bold}
+.layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(350px,.85fr);gap:14px}
+.panel,.treePanel{background:#fff;border-radius:14px;padding:18px;box-shadow:0 2px 7px #0001}
+h2{color:#527a39;margin-top:0}
+.varieties{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.variety{background:#fffdf2;border:3px solid #bbb;border-radius:10px;padding:13px;font-size:17px;cursor:pointer}
+.variety:hover{background:#f5f0d8}
+.variety.selected{background:#dff0d5;border-color:#6b9b4a}
+.cross{margin-top:16px;padding:15px;border-radius:12px;text-align:center;background:#fff8df;border:2px solid #dfbd54}
+.parents{font-size:23px;font-weight:bold;margin:10px}
+button{border:0;border-radius:9px;padding:11px 18px;font-size:16px;cursor:pointer;margin:4px}
+.primary{background:#6b9b4a;color:#fff}.orange{background:#e67e22;color:#fff}.gray{background:#777;color:#fff}
+button:disabled{background:#ccc;cursor:not-allowed}
+.center{text-align:center}.dice{text-align:center;font-size:64px;margin:8px}
+.requirement{text-align:center;font-weight:bold;font-size:18px}
+.result{margin-top:16px;padding:18px;border-radius:12px;text-align:center;background:#edf7e8;border:2px solid #8ab56b}
+.new{font-size:30px;font-weight:bold;color:#4f8435;margin:8px}
+.hidden{display:none}.message{text-align:center;font-weight:bold;margin:10px}
+.good{color:#4f8435}.bad{color:#c0392b}
+.nameBox{background:#fff8df;border:2px solid #dfbd54;border-radius:12px;padding:15px;margin-top:12px}
+.nameBox input{width:min(420px,90%);padding:11px;font-size:18px;border:2px solid #bbb;border-radius:8px}
+.badge{display:inline-block;padding:7px 10px;margin:3px;background:#fffdf2;border:2px solid #c8ad55;border-radius:8px}
+.treePanel{overflow:auto}
+.tree{min-width:600px}
+.treeTitle{display:flex;justify-content:space-between;align-items:center}
+.treeGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.root{text-align:center;min-width:85px}
+.rootName{padding:8px 3px;background:#f7edc8;border:2px solid #c8ad55;border-radius:8px;font-weight:bold;font-size:14px}
+.child{margin-top:12px}
+.arrow{color:#777;font-size:18px;line-height:18px}
+.childName{padding:7px 2px;background:#edf7e8;border:2px solid #7ca95c;border-radius:8px;font-weight:bold;font-size:12px;word-break:break-all}
+.small{font-size:10px;color:#666;margin-top:2px}
+.end{background:#fff8df;border:2px solid #dfbd54;padding:15px;border-radius:10px;text-align:center}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ccc;padding:7px;text-align:center}
+th{background:#f3f3f3}
+.note{font-size:13px;color:#666}
+.paramDetail{margin-top:12px;padding:12px;background:#f4f8ef;border:2px solid #9fbd87;border-radius:10px;min-height:100px}
+.paramDetail h3{margin:0 0 8px;color:#527a39}
+.paramLine{display:flex;justify-content:space-between;gap:10px;margin:6px 0}
+.paramStars{letter-spacing:2px}
+.rootName,.childName{cursor:pointer}
+.rootName:hover,.childName:hover{opacity:.75}
+@media(max-width:850px){
+ .layout{grid-template-columns:1fr}
+ .players{grid-template-columns:repeat(2,1fr)}
+ .varieties{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+<style>
+.next-button{width:100%;margin-top:12px;padding:12px;border:0;border-radius:10px;background:#527a39;color:white;font-size:17px;font-weight:bold;cursor:pointer}
+</style>
+<style>
+#selection{max-height:55vh;overflow-y:auto}
+.varietyCard{padding:10px;border:2px solid #bbb;border-radius:10px;background:#fff;cursor:pointer;text-align:left}
+.varietyCard.selected{outline:3px solid #527a39}
+.varietyCard strong,.varietyCard small{display:block;margin-bottom:4px}
+.varietyCard small{font-size:12px;color:#666}
+</style>
+<style>
+#varieties{max-height:42vh;overflow-y:auto}
+</style>
+</head>
+<body>
+<header><h1>🌾 新品種をつくろう！</h1></header>
+
+<div id="app">
+<div id="players" class="players"></div>
+
+<div class="layout">
+<main class="panel">
+<h2 id="turnTitle">プレイヤー1の番</h2>
+
+<section id="selection">
+<p><strong>自分が使える品種から2つ</strong>選んで、かけ合わせよう。</p>
+<div id="varieties" class="varieties"></div>
+
+<div id="crossBox" class="cross hidden">
+<div>選んだ親品種</div>
+<div id="parents" class="parents"></div>
+<button id="crossBtn" class="primary" disabled>🧬 この2品種をかけ合わせる</button>
+</div>
+</section>
+
+<section id="diceArea" class="hidden">
+<h2>🎲 品種改良に挑戦！</h2>
+<p id="crossText" class="center"></p>
+<div id="requirement" class="requirement"></div>
+<div id="dice" class="dice">🎲</div>
+<div class="center"><button id="diceBtn" class="orange">サイコロを振る</button></div>
+</section>
+
+<section id="result" class="result hidden">
+<h2 id="resultTitle"></h2>
+<div id="newVariety" class="new"></div>
+<p id="resultText"></p>
+
+<div id="nameBox" class="nameBox hidden">
+<h3>🌱 新品種に名前をつけよう！</h3>
+<p>自分が生み出した品種に、好きな名前をつけてください。</p>
+<input id="nameInput" maxlength="20" placeholder="例：コメスター">
+<br>
+<button id="nameBtn" class="primary">この名前に決める</button>
+</div>
+
+<div id="nextArea" class="hidden">
+<button id="nextBtn" class="orange">残念！ 次のプレイヤーへ ▶</button>
+</div>
+</section>
+
+<div id="message" class="message"></div>
+
+<h3>🌱 今使える自分の品種</h3>
+<div id="myVarieties"></div>
+
+<section id="endArea" class="end hidden">
+<h2>🏆 ゲーム終了</h2>
+<p>新品種を生み出した数＋自分の品種が自分の品種が親になった数で勝敗を決めます。</p>
+<table>
+<thead><tr><th>プレイヤー</th><th>作った品種</th><th>自分の品種が親になった数</th><th>合計</th></tr></thead>
+<tbody id="scores"></tbody>
+</table>
+</section>
+</main>
+
+<aside class="treePanel">
+<div class="treeTitle"><h2>🌳 品種のつながり</h2></div>
+<div id="tree" class="tree"></div>
+<div id="paramDetail" class="paramDetail">
+  <strong>品種名をタップするとパラメータが表示されます</strong>
+</div>
+<p class="note">↓＝かけ合わせから生まれた品種　　品種名を押すとパラメータを表示</p>
+</aside>
+</div>
+</div>
+
+<script>
+/* =========================
+   基本設定
+========================= */
+
+const FIRST_GENERATION = [
+  "コメヒカリ",
+  "コメマル",
+  "コメコマチ",
+  "コメハルカ",
+  "コメマツリ",
+  "コメニシキ"
+];
+
+/*
+  成功条件。
+  第1世代同士の組み合わせごとに設定。
+  difficulty = サイコロで必要な数字。
+  生まれた新品種の「元の仮名」は、児童が後で自由に変更する。
+*/
+const CROSSING_RULES = {
+  "コメヒカリ|コメマル":   {difficulty:4},
+  "コメヒカリ|コメコマチ": {difficulty:5},
+  "コメヒカリ|コメハルカ": {difficulty:5},
+  "コメヒカリ|コメマツリ": {difficulty:4},
+  "コメヒカリ|コメニシキ": {difficulty:3},
+
+  "コメマル|コメコマチ":   {difficulty:4},
+  "コメマル|コメハルカ":   {difficulty:5},
+  "コメマル|コメマツリ":   {difficulty:3},
+  "コメマル|コメニシキ":   {difficulty:4},
+
+  "コメコマチ|コメハルカ": {difficulty:5},
+  "コメコマチ|コメマツリ": {difficulty:4},
+  "コメコマチ|コメニシキ": {difficulty:3},
+
+  "コメハルカ|コメマツリ": {difficulty:4},
+  "コメハルカ|コメニシキ": {difficulty:3},
+
+  "コメマツリ|コメニシキ": {difficulty:3}
+};
+
+const MAX_TURNS = 16;
+const PLAYERS = [1,2,3,4].map(n => ({
+  name:"プレイヤー"+n,
+  varieties:[...FIRST_GENERATION],
+  created:[],
+  points:0,
+  usedByOthers:0
+}));
+
+/*
+  品種情報
+  parents = 親2品種
+  creator = 作ったプレイヤー番号
+*/
+const varietyInfo = {};
+function randomInitialParam(){
+  return Math.floor(Math.random()*2)+1; // 1〜2
+}
+FIRST_GENERATION.forEach(v => {
+  varietyInfo[v] = {
+    parents:[],
+    creator:null,
+    protected:false,
+    params:{
+      taste:randomInitialParam(),
+      ease:randomInitialParam(),
+      disease:randomInitialParam()
+    }
+  };
+});
+
+let currentPlayer = 0;
+let selected = [];
+let currentCross = null;
+let currentNewVariety = null;
+let turn = 0;
+
+const $ = id => document.getElementById(id);
+
+/* =========================
+   表示
+========================= */
+
+function renderPlayers(){
+  $("players").innerHTML = PLAYERS.map((p,i)=>`
+    <div class="player ${i===currentPlayer ? "active":""}">
+      <h3>${p.name}</h3>
+      <div class="points">⭐ ${p.points}点</div>
+      <div>🌾 ${p.varieties.length}品種</div>
+    </div>
+  `).join("");
+}
+
+function renderVarieties(){
+  $("varieties").innerHTML = "";
+
+  // 自分が作った品種だけでなく、これまでに生まれた
+  // すべての品種から2つ選べるようにする。
+  Object.keys(varietyInfo).forEach(v=>{
+    const b = document.createElement("button");
+    b.className = "variety" + (selected.includes(v) ? " selected":"");
+    b.textContent = v;
+
+    b.onclick = ()=>{
+      if(selected.includes(v)){
+        selected = selected.filter(x=>x!==v);
+      }else if(selected.length < 2){
+        selected.push(v);
+      }
+
+      renderVarieties();
+      updateCross();
+    };
+
+    $("varieties").appendChild(b);
+  });
+}
+
+function updateCross(){
+  if(selected.length===0){
+    $("crossBox").classList.add("hidden");
+    return;
+  }
+
+  $("crossBox").classList.remove("hidden");
+
+  $("parents").textContent =
+    selected.length===1
+      ? selected[0] + " ＋ ？"
+      : selected[0] + " × " + selected[1];
+
+  $("crossBtn").disabled = selected.length !== 2;
+}
+
+function renderMyVarieties(){
+  $("myVarieties").innerHTML =
+    PLAYERS[currentPlayer].varieties.map(v=>
+      `<span class="badge">${v}</span>`
+    ).join("");
+}
+
+/* =========================
+   かけ合わせ
+========================= */
+
+$("crossBtn").onclick = ()=>{
+  const key = [...selected].sort().join("|");
+
+  /*
+    第1世代同士だけでなく、
+    実際に生まれた新品種同士・新品種×第1世代も
+    同じ仕組みで育種できるようにする。
+  */
+  currentCross = getCrossRule(selected);
+
+  if(!currentCross){
+    alert("この組み合わせには、まだ育種条件が設定されていません。");
+    return;
+  }
+
+  $("selection").classList.add("hidden");
+  $("diceArea").classList.remove("hidden");
+
+  $("crossText").textContent =
+    selected[0] + " × " + selected[1];
+
+  $("requirement").textContent =
+    "サイコロで " + currentCross.difficulty + " 以上なら成功！";
+};
+
+function getCrossRule(parents){
+  const key = [...parents].sort().join("|");
+
+  if(CROSSING_RULES[key]){
+    return CROSSING_RULES[key];
+  }
+
+  /*
+    新品種を含む場合は、基本条件を4以上にする。
+    ここを後から品種ごとの条件に変更可能。
+  */
+  const aInfo = varietyInfo[parents[0]];
+  const bInfo = varietyInfo[parents[1]];
+
+  if(aInfo && bInfo){
+    const newCount =
+      (aInfo.parents.length>0 ? 1:0) +
+      (bInfo.parents.length>0 ? 1:0);
+
+    return {
+      difficulty: Math.min(6,4 + newCount)
+    };
+  }
+
+  return null;
+}
+
+/* =========================
+   サイコロ
+========================= */
+
+$("diceBtn").onclick = ()=>{
+  if(!currentCross) return;
+
+  const n = Math.floor(Math.random()*6)+1;
+
+  $("dice").textContent = "🎲 " + n;
+  $("diceBtn").disabled = true;
+
+  setTimeout(()=>{
+    if(n >= currentCross.difficulty){
+      success();
+    }else{
+      failure();
+    }
+  },500);
+};
+
+/* =========================
+   成功
+========================= */
+
+function success(){
+  $("diceArea").classList.add("hidden");
+  $("result").classList.remove("hidden");
+
+  $("resultTitle").textContent = "🎉 品種改良成功！";
+  $("newVariety").textContent = "新品種が生まれました！";
+  $("resultText").textContent =
+    selected[0] + " × " + selected[1] +
+    " から新しい品種が生まれました。";
+
+  $("nameBox").classList.remove("hidden");
+  $("nextArea").classList.add("hidden");
+$("nameInput").value = "";
+  $("nameInput").focus();
+}
+
+/* =========================
+   新品種の命名
+========================= */
+
+$("nameBtn").onclick = ()=>{
+  const name = $("nameInput").value.trim();
+
+  if(!name){
+    alert("新品種の名前を入力してください。");
+    return;
+  }
+
+  if(name.length > 20){
+    alert("名前は20文字以内にしてください。");
+    return;
+  }
+
+  if(varietyInfo[name]){
+    alert("その名前はすでに使われています。別の名前にしてください。");
+    return;
+  }
+
+  const p = PLAYERS[currentPlayer];
+
+  currentNewVariety = name;
+
+  /*
+    この2品種のうち、他プレイヤーが作った新品種が親に含まれていたら、
+    その新品種の創造者に「自分の品種が親になった数」を1加算する。
+  */
+  selected.forEach(parentName => {
+    const parentInfo = varietyInfo[parentName];
+
+    if (
+      parentInfo &&
+      Number.isInteger(parentInfo.creator) &&
+      parentInfo.creator !== currentPlayer
+    ) {
+      PLAYERS[parentInfo.creator].usedByOthers++;
+      PLAYERS[parentInfo.creator].points++;
+    }
+  });
+
+  /*
+    新品種を生み出したプレイヤーに1点。
+  */
+  p.points++;
+  p.created.push(name);
+  p.varieties.push(name);
+
+  /*
+    系譜に親を記録。
+  */
+  const parentA = varietyInfo[selected[0]].params;
+  const parentB = varietyInfo[selected[1]].params;
+
+  varietyInfo[name] = {
+    parents:[...selected],
+    creator:currentPlayer,
+    protected:false,
+    params:{
+      // 親2品種の平均を切り上げ、改良によって少しずつ上昇
+      taste:Math.min(5, Math.ceil((parentA.taste + parentB.taste) / 2) + 1),
+      ease:Math.min(5, Math.ceil((parentA.ease + parentB.ease) / 2) + 1),
+      disease:Math.min(5, Math.ceil((parentA.disease + parentB.disease) / 2) + 1)
+    }
+  };
+
+  $("newVariety").textContent = name;
+  $("resultText").textContent =
+    "あなたが育成した新品種です！";
+
+  $("nameBox").classList.add("hidden");
+
+  // 命名が終わったら「次のプレイヤーへ」を必ず表示
+  $("nextArea").classList.remove("hidden");
+  $("nextBtn").classList.remove("hidden");
+  $("nextBtn").textContent = "次のプレイヤーへ ▶";
+
+  renderAll();
+};
+
+/* =========================
+   失敗
+========================= */
+
+function failure(){
+  // サイコロ画面を閉じる
+  $("diceArea").classList.add("hidden");
+
+  // 結果画面を表示
+  $("result").classList.remove("hidden");
+
+  // 成功時の内容をすべて消す
+  $("resultTitle").textContent = "😢 残念！";
+  $("newVariety").textContent = "";
+  $("resultText").textContent = "品種改良は失敗しました。";
+
+  // 命名・品種登録は失敗時には絶対に表示しない
+  $("nameBox").classList.add("hidden");
+
+  // 「次のプレイヤーへ」だけ表示
+  $("nextArea").classList.remove("hidden");
+  $("nextBtn").textContent = "残念！ 次のプレイヤーへ ▶";
+
+  $("message").innerHTML =
+    '<span class="bad">残念！</span>';
+}
+
+/* =========================
+   次のプレイヤー
+========================= */
+
+function nextPlayer(){
+  turn++;
+
+  if(turn >= MAX_TURNS){
+    finishGame();
+    return;
+  }
+
+  currentPlayer = (currentPlayer + 1) % 4;
+
+  selected = [];
+  currentCross = null;
+  currentNewVariety = null;
+
+  $("result").classList.add("hidden");
+  $("selection").classList.remove("hidden");
+  $("diceArea").classList.add("hidden");
+  $("crossBox").classList.add("hidden");
+  $("nameBox").classList.add("hidden");
+  $("nextArea").classList.add("hidden");
+
+  $("dice").textContent = "🎲";
+  $("diceBtn").disabled = false;
+  $("message").textContent = "";
+
+  $("turnTitle").textContent =
+    "プレイヤー" + (currentPlayer+1) + "の番";
+
+  renderAll();
+}
+
+/* 成功・失敗どちらからでも同じボタンで進める */
+$("nextBtn").onclick = nextPlayer;
+
+/* =========================
+   品種のつながり
+========================= */
+
+function showVarietyParams(name){
+  const info = varietyInfo[name];
+  const box = $("paramDetail");
+  if(!info || !info.params || !box) return;
+
+  const p = info.params;
+  const stars = n => "★".repeat(Number(n)) + "☆".repeat(5-Number(n));
+
+  box.innerHTML = `
+    <h3>🌾 ${name}</h3>
+    <div class="paramLine"><span>おいしさ</span><span class="paramStars">${stars(p.taste)}</span></div>
+    <div class="paramLine"><span>育てやすさ</span><span class="paramStars">${stars(p.ease)}</span></div>
+    <div class="paramLine"><span>病気への強さ</span><span class="paramStars">${stars(p.disease)}</span></div>
+  `;
+}
+
+function renderTree(){
+  $("tree").innerHTML = "";
+
+  const grid = document.createElement("div");
+  grid.className = "treeGrid";
+
+  FIRST_GENERATION.forEach(root=>{
+    const r = document.createElement("div");
+    r.className = "root";
+
+    r.innerHTML = `<div class="rootName" data-variety="${root}">${root}</div>`;
+
+    const children = Object.entries(varietyInfo)
+      .filter(([name,info]) => info.parents && info.parents.includes(root));
+
+    children.forEach(([name,info])=>{
+      const c = document.createElement("div");
+      c.className = "child";
+
+      c.innerHTML = `
+        <div class="arrow">↓</div>
+        <div class="childName" data-variety="${name}">${name}</div>
+        <div class="small">P${info.creator+1}が創造</div>`;
+
+      r.appendChild(c);
+
+      // 新品種を親にした次世代も、その直下に表示。
+      const grandchildren = Object.entries(varietyInfo)
+        .filter(([childName,childInfo]) =>
+          childInfo.parents && childInfo.parents.includes(name)
+        );
+
+      grandchildren.forEach(([childName,childInfo])=>{
+        const gc = document.createElement("div");
+        gc.className = "child";
+        gc.style.marginLeft = "18px";
+        gc.innerHTML = `
+          <div class="arrow">↓</div>
+          <div class="childName" data-variety="${childName}">${childName}</div>
+          <div class="small">P${childInfo.creator+1}が創造</div>`;
+        r.appendChild(gc);
+      });
+    });
+
+    grid.appendChild(r);
+  });
+
+  $("tree").appendChild(grid);
+}
+
+$("tree").addEventListener("click", e=>{
+  const target = e.target.closest("[data-variety]");
+  if(target) showVarietyParams(target.dataset.variety);
+});
+
+/* =========================
+   終了
+========================= */
+
+function finishGame(){
+  $("selection").classList.add("hidden");
+  $("diceArea").classList.add("hidden");
+  $("result").classList.add("hidden");
+  $("endArea").classList.remove("hidden");
+
+  const sorted = [...PLAYERS].sort((a,b)=>b.points-a.points);
+
+  $("scores").innerHTML = sorted.map(p=>`
+    <tr>
+      <td>${p.name}</td>
+      <td>${p.created.length}</td>
+      <td>${p.usedByOthers}</td>
+      <td><strong>${p.points}</strong></td>
+    </tr>
+  `).join("");
+
+  $("turnTitle").textContent = "🏆 結果発表";
+  renderPlayers();
+}
+
+function renderAll(){
+  renderPlayers();
+  renderVarieties();
+  renderMyVarieties();
+  renderTree();
+}
+
+renderAll();
+
+</script>
+</body>
+</html>
