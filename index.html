@@ -75,6 +75,9 @@ th{background:#f3f3f3}
 <style>
 #varieties{max-height:42vh;overflow-y:auto}
 </style>
+<style>
+.bonusText{font-size:12px;font-weight:bold;margin-left:4px}
+</style>
 </head>
 <body>
 <header><h1>🌾 新品種をつくろう！</h1></header>
@@ -239,7 +242,7 @@ function renderPlayers(){
     <div class="player ${i===currentPlayer ? "active":""}">
       <h3>${p.name}</h3>
       <div class="points">⭐ ${p.points}点</div>
-      <div>🌾 ${p.varieties.length}品種</div>
+      <div>🌾 作った品種 ${p.created.length}品種</div>
     </div>
   `).join("");
 }
@@ -615,6 +618,20 @@ $("tree").addEventListener("click", e=>{
    終了
 ========================= */
 
+function getPerfectBonus(playerIndex){
+  const player = PLAYERS[playerIndex];
+  return player.created.reduce((bonus, name)=>{
+    const info = varietyInfo[name];
+    if(info && info.params &&
+       info.params.taste === 5 &&
+       info.params.ease === 5 &&
+       info.params.disease === 5){
+      return bonus + 5;
+    }
+    return bonus;
+  }, 0);
+}
+
 function finishGame(){
   $("selection").classList.add("hidden");
   $("diceArea").classList.add("hidden");
@@ -622,15 +639,19 @@ function finishGame(){
   $("endArea").classList.remove("hidden");
 
   const sorted = [...PLAYERS].sort((a,b)=>b.points-a.points);
+  $("scores").innerHTML = sorted.map(p=>{
+    const playerIndex = PLAYERS.indexOf(p);
+    const bonus = getPerfectBonus(playerIndex);
+    const finalScore = p.points + bonus;
+    return `
+      <tr>
+        <td>${p.name}</td>
+        <td>${p.created.length}</td>
+        <td>${p.usedByOthers}</td>
+        <td><strong>${finalScore}</strong>${bonus ? ` <span class="bonusText">（☆5ボーナス＋${bonus}点）</span>` : ""}</td>
+      </tr>`;
+  }).join("");
 
-  $("scores").innerHTML = sorted.map(p=>`
-    <tr>
-      <td>${p.name}</td>
-      <td>${p.created.length}</td>
-      <td>${p.usedByOthers}</td>
-      <td><strong>${p.points}</strong></td>
-    </tr>
-  `).join("");
 
   $("turnTitle").textContent = "🏆 結果発表";
   renderPlayers();
