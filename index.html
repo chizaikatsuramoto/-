@@ -122,7 +122,7 @@ th{background:#f3f3f3}
 </div>
 
 <div id="nextArea" class="hidden">
-<button id="nextBtn" class="orange">次のプレイヤーへ ▶</button>
+<button id="nextBtn" class="orange">残念！ 次のプレイヤーへ ▶</button>
 </div>
 </section>
 
@@ -133,7 +133,7 @@ th{background:#f3f3f3}
 
 <section id="endArea" class="end hidden">
 <h2>🏆 ゲーム終了</h2>
-<p>作った品種の数＋自分の品種が親になった数で勝敗を決めます。</p>
+<p>新品種を生み出した数＋自分の品種が自分の品種が親になった数で勝敗を決めます。</p>
 <table>
 <thead><tr><th>プレイヤー</th><th>作った品種</th><th>自分の品種が親になった数</th><th>合計</th></tr></thead>
 <tbody id="scores"></tbody>
@@ -173,32 +173,29 @@ const FIRST_GENERATION = [
   生まれた新品種の「元の仮名」は、児童が後で自由に変更する。
 */
 const CROSSING_RULES = {
-  "コメヒカリ|コメマル":   {difficulty:4},
-  "コメヒカリ|コメコマチ": {difficulty:5},
-  "コメヒカリ|コメハルカ": {difficulty:5},
+  // どの組み合わせでも、4・5・6で成功（成功率50%）
+  "コメヒカリ|コメマル": {difficulty:4},
+  "コメヒカリ|コメコマチ": {difficulty:4},
+  "コメヒカリ|コメハルカ": {difficulty:4},
   "コメヒカリ|コメマツリ": {difficulty:4},
-  "コメヒカリ|コメニシキ": {difficulty:3},
-
-  "コメマル|コメコマチ":   {difficulty:4},
-  "コメマル|コメハルカ":   {difficulty:5},
-  "コメマル|コメマツリ":   {difficulty:3},
-  "コメマル|コメニシキ":   {difficulty:4},
-
-  "コメコマチ|コメハルカ": {difficulty:5},
+  "コメヒカリ|コメニシキ": {difficulty:4},
+  "コメマル|コメコマチ": {difficulty:4},
+  "コメマル|コメハルカ": {difficulty:4},
+  "コメマル|コメマツリ": {difficulty:4},
+  "コメマル|コメニシキ": {difficulty:4},
+  "コメコマチ|コメハルカ": {difficulty:4},
   "コメコマチ|コメマツリ": {difficulty:4},
-  "コメコマチ|コメニシキ": {difficulty:3},
-
+  "コメコマチ|コメニシキ": {difficulty:4},
   "コメハルカ|コメマツリ": {difficulty:4},
-  "コメハルカ|コメニシキ": {difficulty:3},
-
-  "コメマツリ|コメニシキ": {difficulty:3}
+  "コメハルカ|コメニシキ": {difficulty:4},
+  "コメマツリ|コメニシキ": {difficulty:4}
 };
 
 const MAX_TURNS = 16;
 const PLAYERS = [1,2,3,4].map(n => ({
   name:"プレイヤー"+n,
   varieties:[...FIRST_GENERATION],
-  created:[], // 最初の6品種は「作った品種」には数えない
+  created:[],
   points:0,
   usedByOthers:0
 }));
@@ -321,7 +318,7 @@ $("crossBtn").onclick = ()=>{
     selected[0] + " × " + selected[1];
 
   $("requirement").textContent =
-    "サイコロで " + currentCross.difficulty + " 以上なら成功！";
+    "サイコロで " + currentCross.difficulty + " 以上なら成功！（4・5・6で成功）";
 };
 
 function getCrossRule(parents){
@@ -331,21 +328,9 @@ function getCrossRule(parents){
     return CROSSING_RULES[key];
   }
 
-  /*
-    新品種を含む場合は、基本条件を4以上にする。
-    ここを後から品種ごとの条件に変更可能。
-  */
-  const aInfo = varietyInfo[parents[0]];
-  const bInfo = varietyInfo[parents[1]];
-
-  if(aInfo && bInfo){
-    const newCount =
-      (aInfo.parents.length>0 ? 1:0) +
-      (bInfo.parents.length>0 ? 1:0);
-
-    return {
-      difficulty: Math.min(6,4 + newCount)
-    };
+  // 新品種を含む組み合わせも、4以上で成功（成功率50%）。
+  if(varietyInfo[parents[0]] && varietyInfo[parents[1]]){
+    return {difficulty:4};
   }
 
   return null;
@@ -495,7 +480,7 @@ function failure(){
 
   // 「次のプレイヤーへ」だけ表示
   $("nextArea").classList.remove("hidden");
-  $("nextBtn").textContent = "次のプレイヤーへ ▶";
+  $("nextBtn").textContent = "残念！ 次のプレイヤーへ ▶";
 
   $("message").innerHTML =
     '<span class="bad">残念！</span>';
@@ -581,7 +566,7 @@ function renderTree(){
       c.innerHTML = `
         <div class="arrow">↓</div>
         <div class="childName" data-variety="${name}">${name}</div>
-        <div class="small">P${info.creator+1}が作った品種</div>`;
+        <div class="small">P${info.creator+1}が創造</div>`;
 
       r.appendChild(c);
 
@@ -598,7 +583,7 @@ function renderTree(){
         gc.innerHTML = `
           <div class="arrow">↓</div>
           <div class="childName" data-variety="${childName}">${childName}</div>
-          <div class="small">P${childInfo.creator+1}が作った品種</div>`;
+          <div class="small">P${childInfo.creator+1}が創造</div>`;
         r.appendChild(gc);
       });
     });
